@@ -27,7 +27,7 @@ pygame.display.init()
 pygame.joystick.init()
 js = pygame.joystick.Joystick(0)
 # Init camera
-cap = cv.VideoCapture(2)
+cap = cv.VideoCapture(0)
 cap.set(cv.CAP_PROP_FPS, 20)
 for i in reversed(range(60)):
     ret, frame = cap.read()
