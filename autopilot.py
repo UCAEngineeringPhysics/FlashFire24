@@ -32,7 +32,7 @@ to_tensor = transforms.ToTensor()
 model = convnets.DonkeyNet()  
 model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
 # Init camera
-cap = cv.VideoCapture(0)
+cap = cv.VideoCapture(2)
 cap.set(cv.CAP_PROP_FPS, 20)
 for i in reversed(range(60)):
     ret, frame = cap.read()
