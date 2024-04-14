@@ -1,6 +1,7 @@
 import sys
 import os
 import cv2 as cv
+from picamera2 import Picamera2
 import pygame
 from gpiozero import Servo, PhaseEnableMotor
 from time import time
@@ -16,7 +17,7 @@ STEER_AXIS = 2
 STEER_CENTER = 0.2
 STEER_OFFSET = 0.7
 STEER_DIR = -1  # 1: steer left if steer.value < 0; -1: steer left if steer.value > 0. 
-THROTTLE_LIMIT = 0.3
+THROTTLE_LIMIT = 0.2
 # Init servo 
 steer = Servo(pin=17)
 steer.value = STEER_CENTER #Starting angle
@@ -27,16 +28,19 @@ pygame.display.init()
 pygame.joystick.init()
 js = pygame.joystick.Joystick(0)
 # Load configs and init servo controller
-model_path = os.path.join(sys.path[0], 'data/2024_04_10_16_06/DonkeyNet-10epochs-0.001lr.pth')
+model_path = os.path.join(sys.path[0], 'data/2024_04_12_23_33/DonkeyNet-15epochs-0.001lr.pth')
 to_tensor = transforms.ToTensor()
 model = convnets.DonkeyNet()  
-model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+# model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
 # Init camera
-cap = cv.VideoCapture(0)
-cap.set(cv.CAP_PROP_FPS, 20)
+cv.startWindowThread()
+cam = Picamera2()
+cam.video_configuration.controls.FrameRate = 20.0
+cam.configure(cam.create_preview_configuration(main={"format": 'RGB888', "size": (120, 160)}))
+cam.start()
 for i in reversed(range(60)):
-    ret, frame = cap.read()
-    if not ret:
+    frame = cam.capture_array()
+    if frame is None:
         print("No frame received. TERMINATE!")
         sys.exit()
     if not i % 20:
@@ -52,8 +56,8 @@ is_recording = False
 # MAIN
 try:
     while True:
-        ret, frame = cap.read()  # read image
-        if not ret:
+        frame = cam.capture_array()  # read image
+        if frame is None:
             print("No frame received. TERMINATE!")
             sys.exit()
         for e in pygame.event.get():  # read controller input

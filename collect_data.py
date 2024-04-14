@@ -2,6 +2,7 @@ import sys
 import os
 from datetime import datetime
 import cv2 as cv
+from picamera2 import Picamera2
 import pygame
 from gpiozero import Servo, PhaseEnableMotor
 from time import time
@@ -35,11 +36,14 @@ if not os.path.exists(image_dir):
             raise
 label_path = os.path.join(os.path.dirname(os.path.dirname(image_dir)), 'labels.csv')
 # Init camera
-cap = cv.VideoCapture(2)
-cap.set(cv.CAP_PROP_FPS, 20)
+cv.startWindowThread()
+cam = Picamera2()
+cam.video_configuration.controls.FrameRate = 20.0
+cam.configure(cam.create_preview_configuration(main={"format": 'RGB888', "size": (120, 160)}))
+cam.start()
 for i in reversed(range(60)):
-    ret, frame = cap.read()
-    if not ret:
+    frame = cam.capture_array()
+    if frame is None:
         print("No frame received. TERMINATE!")
         sys.exit()
     if not i % 20:
@@ -55,8 +59,8 @@ is_recording = False
 # MAIN LOOP
 try:
     while True:
-        ret, frame = cap.read()  # read image
-        if not ret:
+        frame = cam.capture_array()  # read image
+        if frame is None:
             print("No frame received. TERMINATE!")
             sys.exit()
         # cv.imshow('camera', cv.resize(frame, (320, 240)))
@@ -75,6 +79,7 @@ try:
                     sys.exit()
                 elif js.get_button(0):  # A button
                     is_recording = not is_recording
+                    print(f"Recording set to {is_recording}")
         # Calaculate steering and throttle value
         act_st = st_ax_val  # steer_input: -1: left, 1: right
         act_th = -th_ax_val  # throttle input: -1: max forward, 1: max backward
@@ -91,8 +96,8 @@ try:
         action = [act_st, act_th]
         print(f"action: {action}")
         if is_recording:
-            img = cv.resize(frame, (120, 160))
-            cv.imwrite(image_dir + str(frame_counts) + '.jpg', img)
+            # img = cv.resize(frame, (120, 160))
+            cv.imwrite(image_dir + str(frame_counts) + '.jpg', frame)
             label = [str(frame_counts) + '.jpg'] + action
             with open(label_path, 'a+', newline='') as f:
                 writer = csv.writer(f)
