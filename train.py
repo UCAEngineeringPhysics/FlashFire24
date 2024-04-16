@@ -7,6 +7,7 @@ import torch.nn as nn
 # from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision.transforms import v2
+from torchvision.io import read_image
 import matplotlib.pyplot as plt
 import convnets
 import cv2 as cv
@@ -38,8 +39,9 @@ class BearCartDataset(Dataset):
 
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
-        image = cv.imread(img_path, cv.IMREAD_COLOR)
-        image_tensor = self.transform(image)
+        # image = cv.imread(img_path, cv.IMREAD_COLOR)
+        # image_tensor = self.transform(image)
+        image_tensor = read_image(img_path)
         steering = self.img_labels.iloc[idx, 1].astype(np.float32)
         throttle = self.img_labels.iloc[idx, 2].astype(np.float32)
         return image_tensor.float(), steering, throttle
